@@ -10,11 +10,12 @@ import (
     "crypto/sha256"
 
 	"github.com/vsergeev/btckeygenie/btckey"
+	"github.com/jinzhu/gorm"
 	
 )
 
 const (
-	DB_TYPE = "mysql"
+	DB_TYPE       = "mysql"
     MYSQL_CONNECT = "test:test@/wallet?charset=utf8&parseTime=True&loc=Local"
 )
 
@@ -50,9 +51,7 @@ func main(){
 		return
 	}
 
-
 	scanner := bufio.NewScanner(file)
-
 	for scanner.Scan() {
 
 		line := scanner.Text()
@@ -66,32 +65,13 @@ func main(){
 			okb, bi_b := getInt(str_sha256, 16)
 
 			if oka {
-
-				priv_a :=  btckey.NewPrivateKey(bi_a)
-				address_a            := priv_a.PublicKey.ToAddress()
-				address_compressed_a := priv_a.PublicKey.ToAddress()
-
 				fmt.Print(input)
-				if Call(address_a) || Call(address_compressed_a){
-			        fmt.Println(" YES")
-			        addressDB_a := NewAddressDB(priv_a.ToWIF(), priv_a.ToWIFC(), address_a, address_compressed_a)
-			        addressDB_a.Save(conn)
-				}
+				execute(conn, bi_a)
 			}
 
-			 
 			if okb {
-                
-				priv_b :=  btckey.NewPrivateKey(bi_b)
-				address_b            := priv_b.PublicKey.ToAddress()
-				address_compressed_b := priv_b.PublicKey.ToAddress()
-
-				fmt.Print(" ", bi_b, "\n")
-				if Call(address_b) || Call(address_compressed_b){
-			        fmt.Println(" YES")
-			        addressDB_b := NewAddressDB(priv_b.ToWIF(), priv_b.ToWIFC(), address_b, address_compressed_b)
-			        addressDB_b.Save(conn)
-				}
+				fmt.Print(" ", bi_b.String(), "\n")
+				execute(conn, bi_b)
 		    }
 			
 		}
@@ -105,12 +85,23 @@ func main(){
 
 }
 
+func execute(conn *gorm.DB, bi *big.Int){
+    priv               := btckey.NewPrivateKey(bi)
+	address            := priv.PublicKey.ToAddressUncompressed()
+	address_compressed := priv.PublicKey.ToAddress()
+
+	if Call(address) || Call(address_compressed){
+        fmt.Println(" YES")
+        addressDB := NewAddressDB(priv.ToWIF(), priv.ToWIFC(), address, address_compressed)
+        addressDB.Save(conn)
+	}
+}
+
 func getInt(input string, type_ int) (bool, *big.Int) {
 	bi    := big.NewInt(0)
 	_, ok := bi.SetString(input, type_)
 	return ok, bi
 }
-
 
 func SHA256(str string) string {
     hash := sha256.Sum256([]byte(str))
