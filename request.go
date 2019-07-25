@@ -8,6 +8,12 @@ import (
  
     
 )
+
+
+type Country struct{
+    Name        string      `json:"name"`   
+    Capital     string      `json:"capital"` 
+}
  
 
 type AddressResponse struct{
@@ -48,7 +54,33 @@ func Call(address string) bool{
     }
 
     //log.Println(addressResponse.ToString())
-    return (addressResponse.FinalBalance > 0 || addressResponse.TotalReceived > 0)
+   // return (addressResponse.FinalBalance > 0 || addressResponse.TotalReceived > 0)
+    return (addressResponse.FinalBalance > 0)
 
 }
  
+func getCountries() []Country{
+    list := make([]Country, 0)
+
+    client := &http.Client{}
+    url := "https://restcountries.eu/rest/v2/all"
+
+    // build a new request, but not doing the POST yet
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        log.Println(err)
+    }
+    req.Header.Add("Content-Type", "application/json")
+
+    // now POST it
+    resp, errResp := client.Do(req)
+    if errResp != nil  || resp.StatusCode != http.StatusOK {
+        log.Printf("Status error: %v", resp.StatusCode)
+    }
+
+    if errOrder := json.NewDecoder(resp.Body).Decode(&list); errOrder != nil {
+        log.Printf("Parse error: %v", errOrder)
+    }
+
+    return list
+}
