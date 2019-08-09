@@ -4,9 +4,7 @@ import (
 	"log"
 	"fmt"
 	"net/http"
-	"encoding/json"
- 
-    
+	"encoding/json"   
 )
 
 
@@ -26,10 +24,10 @@ func (adRes *AddressResponse) ToString() string {
 }
 
 
-func Call(address string) bool{
+func Call(address string, empty bool) bool{
 
 	client := &http.Client{}
-    url := "https://blockchain.info/rawaddr/" + address
+    url := "https://blockchain.info/rawaddr/" + address 
 
     // build a new request, but not doing the POST yet
     req, err := http.NewRequest("GET", url, nil)
@@ -54,9 +52,11 @@ func Call(address string) bool{
     }
 
     //log.Println(addressResponse.ToString())
-   // return (addressResponse.FinalBalance > 0 || addressResponse.TotalReceived > 0)
-    return (addressResponse.FinalBalance > 0)
-
+    if empty {
+       return (addressResponse.FinalBalance > 0 || addressResponse.TotalReceived > 0)
+    }else{
+       return (addressResponse.FinalBalance > 0)
+    }
 }
  
 func getCountries() []Country{

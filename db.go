@@ -39,3 +39,13 @@ func NewAddressDB( priv, priv_comp, pub, pub_comp string) (add *Address){
     add = &Address{ Private: priv, PrivateCompressed: priv_comp, Public: pub, PublicCompressed: pub_comp}
     return
 }
+
+func All(conn *gorm.DB) []Address {
+  list := make([]Address,0)
+
+  conn.
+   // Where("id > 280").
+    Find(&list)
+
+  return list
+}
