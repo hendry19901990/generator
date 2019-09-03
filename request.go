@@ -32,7 +32,7 @@ func Call(address string, empty bool) bool{
     // build a new request, but not doing the POST yet
     req, err := http.NewRequest("GET", url, nil)
     if err != nil {
-    	log.Println(err)
+    	log.Printf("Address %s error: %v \n", address, err)
       return false
     }
     req.Header.Add("Content-Type", "application/json")
@@ -47,7 +47,7 @@ func Call(address string, empty bool) bool{
 
     var addressResponse AddressResponse
     if errOrder := json.NewDecoder(resp.Body).Decode(&addressResponse); errOrder != nil {
-        log.Printf("Parse error: %v", errOrder)
+        log.Printf("Address %s response error: %v \n", address, errOrder)
         return false
     }
 

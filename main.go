@@ -26,6 +26,7 @@ const (
    OPTION_BIT = "bits"
    OPTION_DICTIONARY = "dictionary"
    OPTION_ALL = "all"
+   OPTION_LIST = "list"
 )
 
 /*
@@ -52,6 +53,7 @@ const OPTIONS = `
          prime         read list of prime numbers:    ./generator prime path_of_file  \n
          bits          for loop between bits size:  ./generator bits \n 
          dictionary    read list of possible password of force brute: ./generator dictionary path_of_file\n 
+         list          read list of names of force brute: ./generator list path_of_file\n 
          all           read list of DB and call api to prove if it has balance: ./generator all\n 
 
 `
@@ -82,6 +84,9 @@ func main(){
         read_dictionary(file_path)
     }else if option == OPTION_ALL {
         read_all()
+    }else if option == OPTION_LIST {
+    	file_path := os.Args[2]
+        read_dictionary_bracket(file_path)
 	}else{
        fmt.Println("Option Default")
        default_func()
@@ -90,31 +95,18 @@ func main(){
 }
 
 func default_func(){
-	list := []string{
-	 		"4669523849932130508876392554713407521319117239637943224980015676156491",
-			"4906275427767802358357703730938087362176142642699093827933107888253709",
-			"2409130781894986571956777721649968801511465915451196376269177305066867",
-			"7595009151080016652449223792726748985452052945413160073645842090827711",
-			"3822535632033509464266159811805197854872067042990716005808372194664933",
-			"5885903965180586669073549360644800583458138238012033647539649735017287",
-			"5850725702766829291491370712136286009948642125131436113342815786444567",
-			"4237080979868607742750808600846638318022863593147774739556427943294937",
-			"3773180816219384606784189538899553110499442295782576702222280384917551",
-			"9547848065153773335707495885453566120069130270246768806790708393909999",
-       }
-
-    for _, v := range list{
-    	oka, bi_a := getInt(v, 10)
+	oka,   bi_a := getInt("45408662446006351146498425493603101118929405751231593740963758434475737113700", 10) 
+    _, bi_end   := getInt("57669001306428065956053000376875938421040345304064124051023973211784186134399", 10)
+ 
+    for bi_a.Cmp(bi_end) == -1 {
+	    fmt.Println(bi_a)
+	    
 	    if oka {
 			execute(conn, bi_a)
 		}
 
-		str_sha256_v    :=  SHA256(v)
-		okb, bi_b := getInt(str_sha256_v, 16)
-		if okb {
-			execute(conn, bi_b)
-	    }
-	    fmt.Println(bi_a)
+		_, y := getInt("1", 10)
+        bi_a = bi_a.Add(bi_a, y)
     }
 }
 
@@ -150,6 +142,43 @@ func read_dictionary(file_path string){
 			fmt.Println(line, " ", bi_a)
 			execute(conn, bi_a)
 		 }
+	}
+
+}
+
+func read_dictionary_bracket(file_path string){
+
+	file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Printf(" > Failed!: %v\n", err)
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+	line := ""
+	for scanner.Scan() {
+		line       = scanner.Text()
+		i_i := 0
+		change_    := false
+		line_clean := line
+		for i, r := range line {
+			if string(r) == "(" {
+				i_i = i-1
+				change_ = true
+				break
+			}
+        } 
+        if change_ {
+        	line_clean = strings.Trim(line[:i_i], " ")
+        }		
+		str_sha256_pass    :=  SHA256( line_clean )
+
+   	    oka, bi_a := getInt(str_sha256_pass, 16)
+	    if oka {
+			fmt.Println(line_clean, " ", bi_a)
+			execute(conn, bi_a)
+		 }
+        line = ""
 	}
 
 }
