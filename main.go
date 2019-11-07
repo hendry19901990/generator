@@ -23,6 +23,8 @@ const (
 const (
    OPTION_COUNTRIES     = "countries"
    OPTION_PRIME_NUMBERS = "prime"
+   OPTION_ONLY_PRIME_NUMBERS = "only_prime"
+   OPTION_LINE = "line"
    OPTION_BIT = "bits"
    OPTION_DICTIONARY = "dictionary"
    OPTION_ALL = "all"
@@ -51,12 +53,15 @@ const OPTIONS = `
       option: \n 
          countries     read list of contries from api rest: ./generator countries \n
          prime         read list of prime numbers:    ./generator prime path_of_file  \n
+         only_prime    read list of prime numbers:    ./generator only_prime path_of_file  \n
          bits          for loop between bits size:  ./generator bits \n 
          dictionary    read list of possible password of force brute: ./generator dictionary path_of_file\n 
          list          read list of names of force brute: ./generator list path_of_file\n 
          all           read list of DB and call api to prove if it has balance: ./generator all\n 
 
 `
+
+var richMap map[string]struct{}
 
 func main(){
    if len(os.Args) == 1 {
@@ -71,12 +76,21 @@ func main(){
 		return
 	}
 
+    richMap = FillMap(conn)
+    fmt.Println(len(richMap))
+
 	option := os.Args[1]
 	if option == OPTION_COUNTRIES{
 		read_countries(getCountries())        
 	}else if option == OPTION_PRIME_NUMBERS {
 		file_path := os.Args[2]
 		read_prime_numbers(file_path)
+	}else if option == OPTION_ONLY_PRIME_NUMBERS {
+		file_path := os.Args[2]
+		read_only_prime_numbers(file_path)	
+	}else if option == OPTION_LINE {
+		file_path := os.Args[2]
+		read_prime_numbers_extended(file_path)
 	}else if option == OPTION_BIT {
         read_every_bit()
     }else if option == OPTION_DICTIONARY {
@@ -95,7 +109,7 @@ func main(){
 }
 
 func default_func(){
-	oka,   bi_a := getInt("45408662446006351146498425493603101118929405751231593740963758434475737113700", 10) 
+	oka,   bi_a := getInt("45408662446006351146498425493603101118929405751231593740963758434475737141474", 10) 
     _, bi_end   := getInt("57669001306428065956053000376875938421040345304064124051023973211784186134399", 10)
  
     for bi_a.Cmp(bi_end) == -1 {
@@ -109,6 +123,8 @@ func default_func(){
         bi_a = bi_a.Add(bi_a, y)
     }
 }
+
+
 
 func read_all(){
 	list := All(conn)
@@ -185,7 +201,7 @@ func read_dictionary_bracket(file_path string){
 
 func read_every_bit(){
 
-	_, value := getInt("1766847064778384329583297500742918515827483896875618958121606201292306265", 10)
+	_, value := getInt("1766847064778384329583297500742918515827483896875618958121606201292273638", 10)
 
 	for value.BitLen() > 239 {
 		fmt.Println(value.BitLen(), " = ", value.String())
@@ -254,17 +270,98 @@ func read_prime_numbers(file_path string) {
     }
 }
 
+func read_only_prime_numbers(file_path string) {
+    file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Printf(" > Failed!: %v\n", err)
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		list := strings.Split(line, "\t")
+
+		for _, input := range list {
+			oka, bi_a := getInt(input, 10)
+			if oka {
+				fmt.Print(input, "  ")
+				execute(conn, bi_a)
+			} 
+		}
+		fmt.Println("") 
+    }
+
+    if scanner.Err() != nil {
+        fmt.Printf(" > Failed!: %v\n", scanner.Err())
+    }
+}
+
+func read_prime_numbers_extended(file_path string) {
+    file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Printf(" > Failed!: %v\n", err)
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+
+		line := scanner.Text()
+		str_sha256 := SHA256(line)
+
+		list := strings.Split(line, "\t")
+
+        okb, bi_b := getInt(str_sha256, 16)
+
+        if okb {
+			fmt.Print(list[0], " ", bi_b.String(), "\n")
+			execute(conn, bi_b)
+		}
+ 
+    }
+
+    if scanner.Err() != nil {
+        fmt.Printf(" > Failed!: %v\n", scanner.Err())
+    }
+}
+
 func execute(conn *gorm.DB, bi *big.Int){
     priv               := btckey.NewPrivateKey(bi)
 	address            := priv.PublicKey.ToAddressUncompressed()
 	address_compressed := priv.PublicKey.ToAddress()
 
-	if Call(address, true) || Call(address_compressed, true){
-        fmt.Println(" YES")
-        addressDB := NewAddressDB(priv.ToWIF(), priv.ToWIFC(), address, address_compressed)
+	_, ok1 := richMap[address]
+	if ok1 {
+        fmt.Println(" YES address")
+        addressDB := AddressRust{Private: priv.ToWIF(), Public: address}
         addressDB.Save(conn)
-        addressDB = nil
-	}
+ 	}
+
+    _, ok2 := richMap[address_compressed]
+	if ok2 {
+        fmt.Println(" YES address_compressed")
+        addressDB := AddressRust{Private: priv.ToWIFC(), Public: address_compressed}
+        addressDB.Save(conn)
+ 	}
+}
+
+func executeOLD(conn *gorm.DB, bi *big.Int){
+    priv               := btckey.NewPrivateKey(bi)
+	address            := priv.PublicKey.ToAddressUncompressed()
+	address_compressed := priv.PublicKey.ToAddress()
+
+	if Exist(address, conn){
+        fmt.Println(" YES address")
+        addressDB := AddressRust{Private: priv.ToWIF(), Public: address}
+        addressDB.Save(conn)
+ 	}
+
+	if Exist(address_compressed, conn){
+        fmt.Println(" YES address_compressed")
+        addressDB := AddressRust{Private: priv.ToWIFC(), Public: address_compressed}
+        addressDB.Save(conn)
+ 	}
 }
 
 func getInt(input string, type_ int) (bool, *big.Int) {
