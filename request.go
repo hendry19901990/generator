@@ -11,6 +11,7 @@ import (
 type Country struct{
     Name        string      `json:"name"`   
     Capital     string      `json:"capital"` 
+    Alpha2Code  string      `json:"alpha2Code"` 
 }
  
 
