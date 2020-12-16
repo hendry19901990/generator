@@ -17,7 +17,7 @@ import (
 
 const (
 	DB_TYPE       = "mysql"
-    MYSQL_CONNECT = "test:test@/meme?charset=utf8&parseTime=True&loc=Local"
+    MYSQL_CONNECT = "test:test@/wallet?charset=utf8&parseTime=True&loc=Local"
 )
 
 // OPTIONS
@@ -31,6 +31,10 @@ const (
    OPTION_ALL = "all"
    OPTION_LIST = "list"
    OPTION_PERIODIC_TABLE = "periodic_table"
+)
+
+const (
+	STR_ALL_INT_MAGIC = "1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556575859606162636465666768697071727374757677787980818283848586878889909192939495969799"
 )
 
 /*
@@ -110,7 +114,7 @@ func main(){
       read_periodic_table(file_path)
 	}else{
        fmt.Println("Option Default")
-       getCodes()
+       getAllIntNumbers()
 	}
 
 }
@@ -237,8 +241,6 @@ func read_periodic_table(file_path string){
 	line := ""
 	for scanner.Scan() {
 		line       = scanner.Text()
-		i_i := 0
-		change_    := false
 		line_clean := line
 		str_sha256_pass    :=  SHA256( line_clean )
 
@@ -433,4 +435,20 @@ func getInt(input string, type_ int) (bool, *big.Int) {
 func SHA256(str string) string {
     hash := sha256.Sum256([]byte(str))
     return fmt.Sprintf("%x", hash)
+}
+ 
+func getAllIntNumbers(){
+	size := 187
+	for i := 40; i <= 72; i++ {
+	   for j := 0; j <= size-i; j++ {
+	   	  if j+i > size {continue}
+          str   := STR_ALL_INT_MAGIC[j:j+i]
+          input := SHA256(str)
+          oka, bi_a := getInt(input, 16)
+		  if oka {
+			fmt.Println(input)
+			execute(conn, bi_a)
+		  }
+	   }		
+	}
 }
